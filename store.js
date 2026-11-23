@@ -7,7 +7,7 @@ import { uid } from "./logic.js";
 const KEY = "kulmus-state";
 
 export function emptyState() {
-  return { notes: [], current: null, settings: { lang: "he-IL", commands: true, keepAudio: true } };
+  return { notes: [], current: null, settings: { lang: "he-IL", commands: true, saveAudio: false } };
 }
 
 export function newNote(lang = "he-IL") {
@@ -28,7 +28,9 @@ export function normalize(raw) {
   if (raw.settings && typeof raw.settings === "object") {
     s.settings.lang = ["he-IL", "en-US", "ar-IL"].includes(raw.settings.lang) ? raw.settings.lang : "he-IL";
     s.settings.commands = raw.settings.commands !== false;
-    s.settings.keepAudio = raw.settings.keepAudio !== false;
+    // v1 recorded audio by default, which on some devices takes the microphone away from speech recognition.
+    // The new key starts off, and only an explicit opt-in turns it on.
+    s.settings.saveAudio = raw.settings.saveAudio === true;
   }
   s.current = s.notes.some(n => n.id === raw.current) ? raw.current : s.notes[0]?.id ?? null;
   return s;

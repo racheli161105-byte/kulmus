@@ -3,7 +3,7 @@
  * - App files: cache-first (bump VERSION when you change them, so users get the update)
  * - Google Fonts: stale-while-revalidate
  */
-const VERSION = "kulmus-v1";
+const VERSION = "kulmus-v2";
 const APP_SHELL = [
   "./",
   "./index.html",

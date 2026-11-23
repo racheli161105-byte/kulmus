@@ -47,7 +47,7 @@ function renderEditor() {
   $("#interim").dir = lang.dir;
   $("#lang").value = n.lang;
   $("#cmdToggle").checked = state.settings.commands;
-  $("#keepAudio").checked = state.settings.keepAudio;
+  $("#keepAudio").checked = state.settings.saveAudio;
   renderStats();
   renderClips();
   renderCommands();
@@ -90,7 +90,16 @@ function renderAll() { lastCaret = null; renderList(); renderEditor(); }
    ========================================================= */
 
 const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-const rec = { on: false, engine: null, started: 0, timer: null, caret: null, media: null, chunks: [], stream: null, undo: [] };
+const rec = { on: false, engine: null, started: 0, timer: null, caret: null, media: null, chunks: [], stream: null, undo: [], errors: 0, heard: false, restartTimer: null };
+const isAndroid = /Android/i.test(navigator.userAgent);
+const ERRORS = {
+  "not-allowed": "🎙️ אין הרשאה למיקרופון. לוחצים על סמל המנעול ליד שורת הכתובת, מאשרים מיקרופון, ומנסים שוב.",
+  "service-not-allowed": "🎙️ הדפדפן חוסם את שירות זיהוי הדיבור. ב-iPhone צריך להפעיל הכתבה (הגדרות ← כללי ← מקלדת ← הפעל הכתבה). בדפדפן Brave או Opera זה לא עובד, נסו Chrome.",
+  "audio-capture": "🎙️ לא נמצא מיקרופון. בודקים שהמיקרופון מחובר ושאף תוכנה אחרת (זום, וואטסאפ) לא משתמשת בו.",
+  "network": "📶 אין חיבור לשירות זיהוי הדיבור. בודקים את האינטרנט. בדפדפן Brave זה לא עובד, נסו Chrome.",
+  "language-not-supported": "🌐 הדפדפן לא תומך בשפה הזו. נסו Chrome במחשב.",
+  "no-speech": "🤫 לא שמעתי דיבור. מדברים קרוב יותר למיקרופון, או בודקים בהגדרות שנבחר המיקרופון הנכון."
+};
 // where the user last placed the cursor in the text (pressing record moves focus to the button)
 let lastCaret = null;
 
@@ -135,7 +144,12 @@ function startEngine() {
   engine.continuous = true;
   engine.interimResults = true;
   engine.maxAlternatives = 1;
+  engine.onstart = () => { if (rec.on && !rec.heard) setStatus("מקשיבה… אפשר לדבר"); };
+  engine.onaudiostart = () => { if (rec.on) startAudio(); };
+  engine.onspeechstart = () => { if (rec.on) setStatus("שומעת אותך ✍️"); };
   engine.onresult = ev => {
+    rec.heard = true; rec.errors = 0;
+    $("#micBlocked").hidden = true;
     let interim = "";
     for (let i = ev.resultIndex; i < ev.results.length; i++) {
       const r = ev.results[i];
@@ -145,18 +159,33 @@ function startEngine() {
     $("#interim").textContent = interim;
   };
   engine.onerror = ev => {
-    if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
-      stop();
-      showMicProblem();
-    } else if (ev.error === "network") {
-      toast("⚠️ אין חיבור לשירות זיהוי הדיבור. בודקים את האינטרנט ומנסים שוב.");
-    }
-    // "no-speech" and "aborted" just restart via onend
+    if (ev.error === "aborted") return;
+    if (ev.error === "not-allowed" && inFrame) { stop(); return showMicProblem(); }
+    const fatal = ["not-allowed", "service-not-allowed", "audio-capture", "language-not-supported"].includes(ev.error);
+    rec.errors++;
+    // a pause with no speech is normal; only complain if nothing was ever heard
+    if (ev.error === "no-speech" && rec.heard) return;
+    if (fatal || rec.errors >= 3 || ev.error === "no-speech") showProblem(ERRORS[ev.error] || `⚠️ זיהוי הדיבור נכשל (${ev.error}). מרעננים את הדף ומנסים שוב.`);
+    if (fatal || rec.errors >= 3) stop();
   };
   // browsers stop listening after a pause; keep going until the user presses stop
-  engine.onend = () => { if (rec.on) { try { engine.start(); } catch { /* already starting */ } } };
+  engine.onend = () => {
+    if (!rec.on) return;
+    clearTimeout(rec.restartTimer);
+    rec.restartTimer = setTimeout(() => {
+      if (!rec.on) return;
+      try { startEngine(); } catch { stop(); showProblem("⚠️ זיהוי הדיבור נעצר. לוחצים שוב על הכפתור."); }
+    }, 250);
+  };
   rec.engine = engine;
   engine.start();
+}
+
+function setStatus(text) { $("#recStatus").textContent = text; }
+
+function showProblem(msg) {
+  $("#micBlocked").hidden = false;
+  $("#micBlocked").textContent = msg;
 }
 
 function showMicProblem() {
@@ -167,7 +196,8 @@ function showMicProblem() {
 }
 
 async function startAudio() {
-  if (!state.settings.keepAudio || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return;
+  // speech recognition owns the microphone first; keeping the audio is an opt-in extra, never on Android
+  if (rec.media || rec.stream || !state.settings.saveAudio || isAndroid || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return;
   try {
     rec.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     rec.chunks = [];
@@ -203,17 +233,19 @@ async function start() {
   const ta = $("#text");
   rec.caret = lastCaret !== null ? Math.min(lastCaret, ta.value.length) : ta.value.length;
   rec.on = true;
+  rec.errors = 0;
+  rec.heard = false;
   rec.started = Date.now();
   setRecordingUi(true);
   try { startEngine(); } catch { rec.on = false; setRecordingUi(false); showMicProblem(); return; }
   rec.timer = setInterval(() => { $("#recTimer").textContent = formatDuration(Date.now() - rec.started); }, 500);
-  startAudio();
 }
 
 function stop() {
   if (!rec.on) return;
   rec.on = false;
   clearInterval(rec.timer);
+  clearTimeout(rec.restartTimer);
   try { rec.engine?.stop(); } catch { /* ignore */ }
   setRecordingUi(false);
   stopAudio(state.current);
@@ -245,7 +277,11 @@ $("#lang").addEventListener("change", e => {
   if (restart) start();
 });
 $("#cmdToggle").addEventListener("change", e => { state.settings.commands = e.target.checked; persist(); });
-$("#keepAudio").addEventListener("change", e => { state.settings.keepAudio = e.target.checked; persist(); });
+$("#keepAudio").addEventListener("change", e => {
+  state.settings.saveAudio = e.target.checked;
+  persist();
+  if (e.target.checked && isAndroid) toast("בטלפון אנדרואיד המיקרופון לא יכול גם להקליט וגם לזהות דיבור, אז ההקלטה תישמר רק במחשב");
+});
 
 $("#undoBtn").addEventListener("click", () => {
   const prev = rec.undo.pop();

@@ -24,7 +24,8 @@ Hebrew dictation in the browser. Press record, talk, and the text appears on the
 - **🗣️ Punctuation by voice:** נקודה · פסיק · סימן שאלה · סימן קריאה · נקודתיים · שורה חדשה · פסקה חדשה · פתח/סגור סוגריים… (and the English and Arabic equivalents). Commands only match whole words, so "פסיקה" stays a word. They can be turned off.
 - **✍️ Dictate anywhere:** click inside the text and the next recording is inserted at the cursor, with tidy spacing. **↶ Undo** removes the last dictated chunk.
 - **📄 Notes:** automatic saving, titles generated from the first words, search across all notes (ignoring niqqud), and word and character counts.
-- **🎧 The recordings themselves** are saved next to the text (MediaRecorder + IndexedDB), so you can listen again and check what was said.
+- **🎧 Optional audio keeping** (desktop): the recording itself is saved next to the text (MediaRecorder + IndexedDB). It starts only after speech recognition has the microphone, and is skipped on Android, where the two cannot share it.
+- **Clear diagnostics:** every speech-engine error (no microphone, no speech, blocked service, network) is shown in plain Hebrew with what to do.
 - **Export:** copy, download a `.txt` file, or send to WhatsApp.
 - **Installable (PWA)**, dark mode, responsive, and a ruled-notebook look.
 - **Private:** notes and recordings stay in your browser.
