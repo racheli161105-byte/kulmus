@@ -1,0 +1,10 @@
+{
+  "name": "kulmus",
+  "version": "1.0.0",
+  "description": "Hebrew dictation in the browser: speak and it types.",
+  "type": "module",
+  "private": true,
+  "scripts": { "start": "npx serve .", "test": "node --test *.test.js" },
+  "author": "Racheli Arzon",
+  "license": "MIT"
+}

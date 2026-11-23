@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>קולמוס · מדברים, וזה נכתב</title>
+  <meta name="description" content="קולמוס: הקלדה קולית בעברית. מדברים, והטקסט נכתב על המסך בזמן אמת, כולל פיסוק בקול ושמירת ההקלטות." />
+  <meta name="theme-color" content="#1f2a44" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="קולמוס" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem("kulmus-theme") ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } catch (e) { document.documentElement.dataset.theme = "light"; }
+  </script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="gInk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34446b"/><stop offset="1" stop-color="#1a2338"/></linearGradient>
+      <linearGradient id="gQuill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff7e6"/><stop offset="1" stop-color="#e9d6ad"/></linearGradient>
+      <symbol id="logo" viewBox="0 0 64 64">
+        <rect x="3" y="3" width="58" height="58" rx="17" fill="url(#gInk)" stroke="#e6b25c" stroke-opacity=".8" stroke-width="1.6"/>
+        <path d="M40 10 C26 14 17 27 16 44 L20.5 45.5 C27 33 34 24 44 15 C43 13 42 11 40 10 Z" fill="url(#gQuill)"/>
+        <path d="M37 14 C29 22 23 32 19.5 43" stroke="#b9925a" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        <path d="M16 44 L13.5 51.5 L20.5 45.5 Z" fill="#e05a43"/>
+        <path d="M44 30 a5 5 0 0 1 0 8 M48.5 26.5 a10 10 0 0 1 0 15 M53 23 a15 15 0 0 1 0 22" stroke="#e6b25c" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+        <path d="M11 54 H34" stroke="#fff7e6" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <a class="brand" href="./" aria-label="קולמוס">
+        <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#logo"/></svg>
+        <span class="brand-text"><strong>קולמוס</strong><span class="tagline">מדברים. זה נכתב.</span></span>
+      </a>
+      <p class="hero-sub">הקלדה קולית בעברית: לוחצים, מדברים, והטקסט מופיע על המסך. אומרים "נקודה" או "שורה חדשה", והפיסוק נכתב לבד.</p>
+      <div class="hero-actions">
+        <button class="btn install-btn" id="installBtn" hidden>📲 התקנה</button>
+        <button class="icon-btn theme" id="themeBtn" aria-label="החלפת ערכת צבעים">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="notes card" aria-label="המסמכים שלי">
+      <div class="notes-head">
+        <h2>המסמכים שלי</h2>
+        <button class="btn small primary" id="newNote">＋ חדש</button>
+      </div>
+      <input type="search" id="search" class="search" placeholder="🔍 חיפוש במסמכים…" aria-label="חיפוש במסמכים" />
+      <ul class="note-list" id="noteList"></ul>
+    </aside>
+
+    <section class="editor-col">
+      <div class="banner warn" id="unsupported" hidden>
+        ⚠️ הדפדפן הזה לא תומך בהקלדה קולית. פתחו את קולמוס ב-<b>Chrome</b>, ב-<b>Edge</b> או ב-<b>Safari</b>. אפשר עדיין לכתוב ולערוך ידנית.
+      </div>
+      <div class="banner warn" id="micBlocked" hidden></div>
+
+      <article class="card editor">
+        <header class="editor-head">
+          <input id="title" class="title-input" placeholder="מסמך חדש" aria-label="כותרת המסמך" maxlength="120" />
+          <div class="editor-opts">
+            <select id="lang" aria-label="שפת ההקלטה"></select>
+            <label class="toggle" title="להפוך מילים כמו נקודה ופסיק לסימני פיסוק"><input type="checkbox" id="cmdToggle" checked /> <span>פיסוק בקול</span></label>
+          </div>
+        </header>
+
+        <div class="record-row">
+          <button class="rec-btn" id="recBtn" aria-pressed="false" aria-label="התחלת הקלטה">
+            <span class="rec-icon">🎙️</span>
+          </button>
+          <div class="rec-info">
+            <b id="recStatus">לוחצים ומתחילים לדבר</b>
+            <span class="muted" id="recTimer"></span>
+            <div class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+
+        <div class="paper">
+          <textarea id="text" placeholder="הטקסט יופיע כאן תוך כדי דיבור. אפשר גם להקליד ולערוך." aria-label="הטקסט"></textarea>
+          <p class="interim" id="interim" aria-live="polite"></p>
+        </div>
+
+        <footer class="editor-foot">
+          <span class="stats" id="stats"></span>
+          <div class="row">
+            <button class="btn small" id="copyBtn">📋 העתקה</button>
+            <button class="btn small" id="txtBtn">⬇ קובץ טקסט</button>
+            <button class="btn small" id="waBtn">💬 וואטסאפ</button>
+            <button class="btn small ghost" id="undoBtn" disabled>↶ ביטול הוספה</button>
+            <button class="btn small danger" id="deleteNote">🗑 מחיקה</button>
+          </div>
+        </footer>
+      </article>
+
+      <article class="card clips-card" id="clipsCard" hidden>
+        <header class="card-head">
+          <h3>🎧 ההקלטות של המסמך</h3>
+          <label class="toggle"><input type="checkbox" id="keepAudio" checked /> <span>לשמור הקלטות</span></label>
+        </header>
+        <ul class="clips" id="clips"></ul>
+      </article>
+
+      <details class="card tips">
+        <summary>💡 פקודות קוליות וטיפים</summary>
+        <div class="tips-body">
+          <div class="cmd-grid" id="cmdGrid"></div>
+          <ul>
+            <li>מדברים ברור ובקצב רגיל. הטקסט האפור הוא ניחוש ביניים, והוא מתקבע אחרי שמסיימים משפט.</li>
+            <li>אפשר ללחוץ באמצע הטקסט, וההקלטה הבאה תיכנס במקום הסמן.</li>
+            <li>מילה כמו "נקודה" יכולה להופיע גם בתוך משפט. אם זה מפריע, מכבים את "פיסוק בקול".</li>
+            <li>זיהוי הדיבור מתבצע בשירות של הדפדפן (Chrome, Edge או Safari) וצריך אינטרנט. המסמכים וההקלטות נשמרים רק אצלכם.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">נבנה על ידי <strong>רחלי ארזון</strong> · HTML, CSS ו-JavaScript נקי · Web Speech API · הכול נשמר רק בדפדפן שלך 🔒</footer>
+
+  <dialog id="confirmDialog" class="sheet-dialog">
+    <form method="dialog">
+      <p id="confirmMsg" class="confirm-msg"></p>
+      <div class="dialog-actions"><span class="spacer"></span><button value="cancel" class="btn">ביטול</button><button value="ok" class="btn primary danger-solid" id="confirmOk">אישור</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
