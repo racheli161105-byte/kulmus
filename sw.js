@@ -1,18 +1,17 @@
 /**
- * Service worker: makes Shiklul work offline and installable.
+ * Service worker: makes Kulmus work offline and installable.
  * - App files: cache-first (bump VERSION when you change them, so users get the update)
  * - Google Fonts: stale-while-revalidate
  */
-const VERSION = "shiklul-v4";
+const VERSION = "kulmus-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./manifest.webmanifest",
   "./app.js",
-  "./utils.js",
+  "./logic.js",
   "./store.js",
-  "./charts.js",
   "./favicon.svg",
   "./icon-192.png",
   "./icon-512.png",
@@ -26,7 +25,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k.startsWith("shiklul-") && k !== VERSION).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.startsWith("kulmus-") && k !== VERSION).map(k => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -50,6 +49,7 @@ self.addEventListener("fetch", event => {
 
   if (url.origin !== location.origin) return;
 
+
   // navigations: always fall back to the cached app when offline
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).catch(() => caches.match("./index.html")));
@@ -64,3 +64,4 @@ self.addEventListener("fetch", event => {
     })),
   );
 });
+
